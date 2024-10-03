@@ -11,61 +11,50 @@ namespace NBody
     internal class Simulation
     {
         public List<Body> bodies = new(); //TODO
-        const float dt = 0.00001f;
-        const float MIN_MAGSQ = 0.1f;
-        const int CENTER_MASS = 99999;
-        const int MAX_MASS = 99999;
+        const float dt = 0.000004f;
+        const float MIN_MAGSQ = 1;
+        const int CENTER_MASS = 150000;
+        const int MAX_MASS = 50000;
+        const int MIN_MASS = 1000;
+        const int INCLINE_DEGREE = 60;
+        //const int MAX_DIST = 200;
+        bool closedSpace;
         int w, h;
 
-        public Simulation(int w, int h, int n, bool spin = true, bool centerOfMass=false)
+        public Simulation(int w, int h, int n, bool spin = true, bool centerOfMass = false, bool closedSpace = false)
         {
             this.h = h;
             this.w = w;
+            this.closedSpace = closedSpace;
             var rng = new Random();
             for (int i = 0; i < n; i++)
             {
                 int x = rng.Next(0, w);
                 int y = rng.Next(0, h);
+                int mass = rng.Next(MIN_MASS, MAX_MASS);
+                int size = (mass - MIN_MASS) / ((MAX_MASS - MIN_MASS) / 5);
                 if (spin)
                 {
-                    int velY = x - w / 2;
-                    int velX = -(y - h / 2);
-                    Vector2 vel = new Vector2(velX, velY) * 40;
-                    bodies.Add(new Body(new Vector2(x, y), vel));
+                    var rads = Math.PI / 180 * INCLINE_DEGREE;
+                    var cs = (float)Math.Cos(rads);
+                    var sn = (float)Math.Sin(rads);
+                    int velY90 = x - w / 2;
+                    int velX90 = -(y - h / 2);
+
+                    var velX = velX90 * cs - velY90 * sn;
+                    var velY = velX90 * sn + velY90 * cs;
+                    Vector2 vel = new Vector2(velX, velY) * rng.Next(0, 100);
+                    bodies.Add(new Body(new Vector2(x, y), vel, size, mass));
 
                 }
                 else
                 {
-                    bodies.Add(new Body(new Vector2(x, y), Vector2.Zero));
+                    bodies.Add(new Body(new Vector2(x, y), Vector2.Zero, size, mass));
                 }
             }
             if (centerOfMass)
             {
-                bodies.Add(new Body(new Vector2(w / 2, h / 2), Vector2.Zero, CENTER_MASS, true));
-            }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="w"> Screen width </param>
-        /// <param name="h"> Screen Height</param>
-        /// <param name="n"> Number of bodies</param>
-        /// <param name="distMin">min distance to center</param>
-        /// <param name="distMax">max distance to center</param>
-        /// <param name="spin">true = system spin around the center</param>
-        public Simulation(int w, int h, int n, int distMin, int distMax, bool spin = true)
-        {
-            this.h = h;
-            this.w = w;
-            Vector2 center = new Vector2(w / 2, h / 2);
-            var rng = new Random();
-            for (int i = 0; i < n; i++)
-            {
-                int x = rng.Next(0, w);
-                int y = rng.Next(0, h);
-                int mass = rng.Next(0, MAX_MASS);
-                bodies.Add(new Body(new Vector2(x, y), Vector2.Zero));
+                bodies.Add(new Body(new Vector2(w / 2, h / 2), Vector2.Zero, 5, CENTER_MASS, true));
             }
         }
 
@@ -76,11 +65,19 @@ namespace NBody
             foreach (var body in bodies)
             {
                 body.Update(dt);
+                if (closedSpace)
+                {
+                    if (body.Position.X < 0) body.Position += new Vector2(w, 0);
+                    if (body.Position.X > w) body.Position += new Vector2(-w, 0);
+                    if (body.Position.Y < 0) body.Position += new Vector2(0, h);
+                    if (body.Position.Y > h) body.Position += new Vector2(0, -h);
+
+                }
             }
-            bodies.RemoveAll(body => body.Position.X < -100 || body.Position.Y < -300 || body.Position.X > w+100 || body.Position.Y > h+300);
+            bodies.RemoveAll(body => body.Position.X < -100 || body.Position.Y < -300 || body.Position.X > w + 100 || body.Position.Y > h + 300);
         }
 
-        private void Calculate()
+        private void Calculate() //TODO something's off. Heavy planets are affected too much by the light ones
         {
             for (int i = 0; i < bodies.Count; i++)
             {
@@ -91,15 +88,18 @@ namespace NBody
                     var p2 = bodies[j].Position;
                     var m2 = bodies[j].Mass;
 
-                    var r = p2 - p1;
-                    var magSq = r.X * r.X + r.Y * r.Y;
-                    magSq = magSq < MIN_MAGSQ ? MIN_MAGSQ : magSq;
-                    float mag = MathF.Sqrt(magSq);
+                    var relPos = p2 - p1;
+                    var rSq = relPos.X * relPos.X + relPos.Y * relPos.Y;
+                    //if (rSq > MAX_DIST*MAX_DIST) { continue; }
+                    rSq = rSq < MIN_MAGSQ ? MIN_MAGSQ : rSq;
+                    float r = MathF.Sqrt(rSq);
 
-                    var acc = (m2 / (magSq * mag)) * r;
+                    var t = relPos / (rSq * r);
+                    var acc1 = m2 * t;
+                    var acc2 = m1 * -t;
 
-                    bodies[i].Acceleration += m2 * acc;
-                    bodies[j].Acceleration -= m1 * acc;
+                    bodies[i].Acceleration += m2 * acc1;
+                    bodies[j].Acceleration += m1 * acc2;
                 }
             }
         }

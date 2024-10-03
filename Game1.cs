@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame;
@@ -15,6 +14,9 @@ namespace NBody
 
         Simulation Sim;
         const int PLANETS_COUNT = 400;
+        const bool SPIN = true;
+        const bool MASS_CENTER = true;
+        const bool ENDLESS = true;
 
         public Game1()
         {
@@ -23,9 +25,11 @@ namespace NBody
             IsMouseVisible = true;
             //_graphics.PreferredBackBufferWidth = _width;
             //_graphics.PreferredBackBufferHeight = _height;
+            //_graphics.GraphicsDevice.Adapter =
             _graphics.PreferredBackBufferWidth = _width;
             _graphics.PreferredBackBufferHeight = _height;
             _graphics.IsFullScreen = false;
+            _graphics.HardwareModeSwitch = true;
             Window.IsBorderless = true;
             Window.Position = Point.Zero;
         }
@@ -33,7 +37,7 @@ namespace NBody
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            Sim = new Simulation(_width, _height, PLANETS_COUNT, true, true);
+            Sim = new Simulation(_width, _height, PLANETS_COUNT, SPIN, MASS_CENTER, ENDLESS);
 
             base.Initialize();
         }
@@ -64,7 +68,8 @@ namespace NBody
             _spriteBatch.Begin();
             foreach (Body body in Sim.bodies)
             {
-                Primitives2D.DrawCircle(_spriteBatch, body.Position.X, body.Position.Y, 5, 4, Color.White);
+                Primitives2D.DrawCircle(_spriteBatch, body.Position.X, body.Position.Y, body.Size, 10, Color.White);
+                //Primitives2D.DrawLine(_spriteBatch, body.PrevPosition, body.Position, Color.White);
             }
             _spriteBatch.End();
 

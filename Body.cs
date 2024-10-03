@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,12 +15,17 @@ namespace NBody
         private Vector2 _velocity;
         private Vector2 _acceleration;
         private bool _immovable;
+        private int _size;
+
+        //private Vector2 _prevPosition;
 
         public float Mass { get { return _mass; } set { _mass = value; } }
         public Vector2 Position { get { return _position; } set { _position = value; } }
         public Vector2 Velocity { get { return _velocity; } set { _velocity = value; } }
         public Vector2 Acceleration { get { return _acceleration; } set { _acceleration = value; } }
+        public int Size { get { return _size; } set { _size = value; } }
         //public bool Immovable { get { return _immovable; } set { _immovable = value; } }
+        //public Vector2 PrevPosition { get { return _prevPosition; } set { _prevPosition = value; } }
 
 
         //internal Body(Vector2 pos, Vector2 vel)
@@ -33,12 +39,14 @@ namespace NBody
         //    _velocity = vel;
         //    _acceleration = Vector2.Zero;
         //}
-        internal Body(Vector2 pos, Vector2 vel, int mass = 10000, bool immovable = false)
+        internal Body(Vector2 pos, Vector2 vel, int size = 1, int mass = 10000, bool immovable = false)
         {
             _mass = mass;
             _position = pos;
             _velocity = vel;
+            _size = size;
             _acceleration = Vector2.Zero;
+            //_prevPosition = Position;
             _immovable = immovable;
         }
 
@@ -47,6 +55,7 @@ namespace NBody
         {
             if (_immovable) return;
             //Position += Velocity.Length() > 0.01 ? Velocity*dt : Vector2.Zero;
+            //_prevPosition = Position;
             Position += Velocity * dt;
             Velocity += Acceleration * dt;
             Acceleration = Vector2.Zero;
